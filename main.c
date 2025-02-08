@@ -13,8 +13,8 @@
 #define GRID_MIN_X      0
 #define GRID_MIN_Y      0
 
-#define MAX_X           GRID_MAX_X - 3 
-#define MAX_Y           GRID_MAX_Y - 3 
+#define MAX_X           GRID_MAX_X - 1 
+#define MAX_Y           GRID_MAX_Y - 1 
 #define MIN_X           0
 #define MIN_Y           0
 
@@ -24,6 +24,7 @@
 
 #define SNAKE_MAX_LENGTH    50
 #define TARGET_FPS          60
+#define SNAKE_START_SPEED   5
 
 
 void draw_grid() {
@@ -36,7 +37,7 @@ void draw_grid() {
 }
 
 static inline void fill_cell(int x, int y, Color fill_color) {
-    DrawRectangle((x + 1) * CELL_WIDTH, (y + 1) * CELL_HEIGHT, CELL_WIDTH - 1, CELL_HEIGHT - 1, fill_color);
+    DrawRectangle(x * CELL_WIDTH, y * CELL_HEIGHT, CELL_WIDTH - 1, CELL_HEIGHT - 1, fill_color);
 }
 
 void draw_snake_segment(int x, int y) {
@@ -74,7 +75,7 @@ Snake* init_snake(int x, int y) {
     snake->body[2] = (Point){ .x = x+2, .y = y};
 
     snake->length = 3;
-    snake->speed  = 2;
+    snake->speed  = SNAKE_START_SPEED;
 
     snake->direction = (Point){.x = 1, .y = 0};
 
@@ -94,10 +95,10 @@ void move_snake(Snake* snake) {
 
     int next_x = snake->body[snake->length-1].x + snake->direction.x;
     int next_y = snake->body[snake->length-1].y + snake->direction.y;
-    if (next_x >= MAX_X) next_x = MIN_X;
-    if (next_y >= MAX_Y) next_y = MIN_Y;
-    if (next_x <= MIN_X) next_x = MAX_X;
-    if (next_y <= MIN_Y) next_y = MAX_Y;
+    if (next_x > MAX_X) next_x = MIN_X;
+    if (next_y > MAX_Y) next_y = MIN_Y;
+    if (next_x < MIN_X) next_x = MAX_X;
+    if (next_y < MIN_Y) next_y = MAX_Y;
     snake->body[snake->length-1].x = next_x;
     snake->body[snake->length-1].y = next_y;
 
