@@ -2,6 +2,9 @@
 
 #include "defines.h"
 #include "drawing.h"
+#include "keyboard.h"
+#include "snake.h"
+#include "game.h"
 
 
 void draw_grid() {
@@ -32,4 +35,33 @@ void draw_snake_segment(int x, int y) {
 
 void clear_snake_segment(int x, int y) {
     fill_cell(x, y, BG_COLOR);
+}
+
+void drawing_loop(Game *game) {
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "snake network");
+    SetTargetFPS(60);
+
+    size_t framesCounter = 0;
+
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();
+
+        framesCounter++;
+        ClearBackground(BG_COLOR);
+
+        process_keyboard_events(game);
+
+        draw_snake(game->world->snakes[0]);
+
+        size_t frames_per_tick = TARGET_FPS / game->world->snakes[0]->speed;
+        if (framesCounter % frames_per_tick == 0) {
+            framesCounter = 0;
+            move_snake(game->world->snakes[0]);
+        }
+
+        EndDrawing();
+    }
+
+    CloseWindow();
 }
