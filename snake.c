@@ -22,13 +22,13 @@ Snake *init_snake(int x, int y) {
 }
 
 void draw_snake(Snake *snake) {
-    for (int i = 0; i < snake->length; ++i) {
+    for (size_t i = 0; i < snake->length; ++i) {
         draw_snake_segment(snake->body[i].x, snake->body[i].y);
     }
 }
 
 void move_snake(Snake *snake) {
-    for (int i = 0; i < snake->length-1; ++i) {
+    for (size_t i = 0; i < snake->length-1; ++i) {
         snake->body[i] = snake->body[i+1];
     }
 
