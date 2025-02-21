@@ -24,9 +24,9 @@ void draw_grid() {
 
 static inline void fill_cell(int x, int y, Color fill_color) {
     DrawRectangle(
-            x * CELL_WIDTH, y * CELL_HEIGHT,
-            CELL_WIDTH - 1, CELL_HEIGHT - 1,
-            fill_color);
+                x * CELL_WIDTH, y * CELL_HEIGHT,
+                CELL_WIDTH - 1, CELL_HEIGHT - 1,
+                fill_color);
 }
 
 void draw_snake_segment(int x, int y) {
@@ -37,21 +37,20 @@ void clear_snake_segment(int x, int y) {
     fill_cell(x, y, BG_COLOR);
 }
 
-void drawing_loop(Game *game) {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "snake network");
-    SetTargetFPS(60);
+void main_drawing_loop(Game *game) {
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
 
+    SetTargetFPS(60);
     size_t framesCounter = 0;
 
     while (!WindowShouldClose())
     {
-        BeginDrawing();
-
         framesCounter++;
+
+        BeginDrawing();        
         ClearBackground(BG_COLOR);
 
         process_keyboard_events(game);
-
         draw_snake(game->world->snakes[0]);
 
         size_t frames_per_tick = TARGET_FPS / game->world->snakes[0]->speed;
@@ -62,6 +61,5 @@ void drawing_loop(Game *game) {
 
         EndDrawing();
     }
-
     CloseWindow();
 }

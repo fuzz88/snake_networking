@@ -15,7 +15,7 @@ Game *init_game() {
     Game *g = malloc(sizeof(Game));
     assert(g != NULL);
 
-    g->players = malloc(sizeof(Player*) * 10);
+    g->players = malloc(sizeof(Player*) * MAX_PLAYERS);
     assert(g->players != NULL);
     
     Player *p = malloc(sizeof(Player));
@@ -29,7 +29,7 @@ Game *init_game() {
     World *w = malloc(sizeof(World));
     assert(w != NULL);
 
-    w->snakes = malloc(sizeof(Snake*) * 10);
+    w->snakes = malloc(sizeof(Snake*) * MAX_SNAKES);
     assert(w->snakes != NULL);
 
     w->snakes[0] = s;
