@@ -28,5 +28,6 @@ typedef struct _Game {
 
 
 Game *init_game();
+void destroy_game(Game *game);
 
 #endif

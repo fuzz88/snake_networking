@@ -39,3 +39,15 @@ Game *init_game() {
 
     return g;
 }
+
+void destroy_game(Game *game) {
+    pthread_mutex_destroy(&game->freeze_mutex);
+
+    free(game->world->snakes);
+    free(game->world);
+    for (size_t i; i< game->players_count; ++i) {
+        free(game->players[i]);
+    }
+    free(game->players);
+    free(game);
+}

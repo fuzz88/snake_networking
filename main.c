@@ -73,8 +73,9 @@ int main(void)
     if (pthread_create(&tcp_client_thread, NULL, client_func, game) != 0) {
         printf("ERROR: thread create failed");
     } 
-    //pthread_detach(thread); 
 
     drawing_loop(game);
+
+    destroy_game(game);
     return 0;
 }
