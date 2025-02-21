@@ -10,8 +10,8 @@
 
 
 Game *init_game() {
-
     srand(time(0));
+
     Game *g = malloc(sizeof(Game));
     assert(g != NULL);
 
@@ -19,6 +19,7 @@ Game *init_game() {
     assert(g->players != NULL);
     
     Player *p = malloc(sizeof(Player));
+
     p->id = rand() % UINT16_MAX;
     p->score = 0;
     p->snake_idx = 0;
@@ -26,8 +27,11 @@ Game *init_game() {
     Snake *s = init_snake(rand()%(MAX_X-4), rand()%MAX_Y);
 
     World *w = malloc(sizeof(World));
+    assert(w != NULL);
+
     w->snakes = malloc(sizeof(Snake*) * 10);
     assert(w->snakes != NULL);
+
     w->snakes[0] = s;
     w->snakes_count = 0;
 
