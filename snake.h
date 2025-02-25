@@ -8,15 +8,16 @@
 
 typedef Point SnakeSegment;
 
-typedef struct _Snake{
+typedef struct _Snake
+{
     SnakeSegment body[SNAKE_MAX_LENGTH];
-    uint8_t length; 
-    uint8_t  speed;
+    uint8_t length;
+    uint8_t speed;
     Point direction;
 } Snake;
 
-Snake* init_snake(int x, int y);
-void draw_snake(Snake* snake);
-void move_snake(Snake* snake);
+Snake *init_snake(int x, int y);
+void draw_snake(Snake *snake);
+void move_snake(Snake *snake);
 
 #endif

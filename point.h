@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-typedef struct _Point {
+typedef struct _Point
+{
     int8_t x;
     int8_t y;
 } Point;

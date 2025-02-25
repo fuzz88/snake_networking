@@ -2,7 +2,6 @@
 #include "drawing.h"
 #include "game.h"
 
-
 int main(void)
 {
     Game *game = init_game();
