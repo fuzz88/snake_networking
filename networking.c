@@ -58,13 +58,11 @@ void *client_func(void *data)
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
-
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        printf("ERROR: socket connection failed");
-        close(sockfd);
-        return NULL;
-    }
+    int conn_result = -1;
+    do {
+        sleep(1);
+        conn_result = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    } while (conn_result < 0);
 
     DataPacket packet;
     packet.player_id = game->players[0]->id;
