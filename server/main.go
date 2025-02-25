@@ -21,7 +21,7 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 	clientsMu.Lock()
 	id := clientID
-	fmt.Println("Connected ", id);
+	fmt.Println("Connected ", id)
 	clients[id] = &Client{conn: conn, id: id}
 	clientID++
 	clientsMu.Unlock()
@@ -68,6 +68,10 @@ func main() {
 			fmt.Println("Connection error:", err)
 			continue
 		}
-		go handleClient(conn)
+		if len(clients) < 2 {
+			go handleClient(conn)
+		} else {
+			continue
+		}
 	}
 }
