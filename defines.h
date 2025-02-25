@@ -26,7 +26,7 @@
 #define SNAKE_MAX_SPEED     20
 
 #define MAX_PLAYERS         10
-#define MAX_SNAKES          10
+#define MAX_SNAKES          MAX_PLAYERS
 
 #define SERVER_IP           "127.0.0.1"
 #define SERVER_PORT         9000
