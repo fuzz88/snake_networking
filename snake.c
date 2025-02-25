@@ -34,11 +34,12 @@ void move_snake(Snake *snake) {
 
     int next_x = snake->body[snake->length-1].x + snake->direction.x;
     int next_y = snake->body[snake->length-1].y + snake->direction.y;
+
     if (next_x > MAX_X) next_x = MIN_X;
     if (next_y > MAX_Y) next_y = MIN_Y;
     if (next_x < MIN_X) next_x = MAX_X;
     if (next_y < MIN_Y) next_y = MAX_Y;
+
     snake->body[snake->length-1].x = next_x;
     snake->body[snake->length-1].y = next_y;
-
 }

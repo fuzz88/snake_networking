@@ -7,6 +7,7 @@
 
 #include "snake.h"
 
+
 typedef struct _World {
     Snake   **snakes;
     size_t  snakes_count;
@@ -23,11 +24,14 @@ typedef struct _Game {
     World   *world;
     Player  **players;
     size_t  players_count;
-    pthread_mutex_t freeze_mutex;
+    pthread_mutex_t update_mutex;
 } Game;
+
+typedef struct _DataPacket DataPacket;
 
 
 Game *init_game();
 void destroy_game(Game *game);
+void add_player(Game *game, DataPacket *received);
 
 #endif

@@ -51,10 +51,18 @@ void main_drawing_loop(Game *game) {
         ClearBackground(BG_COLOR);
 
         process_keyboard_events(game);
-        draw_snake(game->world->snakes[0]);
+
+        pthread_mutex_lock(&game->update_mutex);
+
+        for (size_t i = 0; i < game->world->snakes_count; ++i) {
+            draw_snake(game->world->snakes[i]);
+        }
+
+        pthread_mutex_unlock(&game->update_mutex);
+
 
         size_t frames_per_tick = TARGET_FPS / game->world->snakes[0]->speed;
-        if (framesCounter % frames_per_tick == 0) {
+        if (framesCounter == frames_per_tick) {
             framesCounter = 0;
             move_snake(game->world->snakes[0]);
         }
