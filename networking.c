@@ -11,7 +11,6 @@
 #include "game.h"
 
 int sockfd;
-pthread_mutex_t socket_mutex;
 
 void send_data(int sockfd, DataPacket *packet)
 {
@@ -125,8 +124,6 @@ void *receiver_func(void *data)
             
             free(received.snake);
             received.snake = NULL;
-
-            // sleep(1 / game->world->snakes[0]->speed);
         }
     }
     return NULL;
@@ -134,8 +131,6 @@ void *receiver_func(void *data)
 
 void start_networking(Game *game)
 {
-    pthread_mutex_init(&socket_mutex, NULL);
-
     struct sockaddr_in server_addr;
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
