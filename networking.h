@@ -9,7 +9,7 @@
 typedef struct _DataPacket
 {
     uint16_t player_id;
-    uint16_t length;
+    uint16_t snake_length;
     SnakeSegment *snake;
 } DataPacket;
 

@@ -14,7 +14,7 @@ int sockfd;
 
 void send_data(int sockfd, DataPacket *packet)
 {
-    size_t total_size = sizeof(packet->player_id) + sizeof(packet->length) + (packet->length * sizeof(SnakeSegment));
+    size_t total_size = sizeof(packet->player_id) + sizeof(packet->snake_length) + (packet->snake_length * sizeof(SnakeSegment));
     char *buffer = malloc(total_size);
     if (!buffer)
     {
@@ -23,10 +23,10 @@ void send_data(int sockfd, DataPacket *packet)
     }
 
     memcpy(buffer, &packet->player_id, sizeof(packet->player_id));
-    memcpy(buffer + sizeof(packet->player_id), &packet->length, sizeof(packet->length));
-    if (packet->length > 0)
+    memcpy(buffer + sizeof(packet->player_id), &packet->snake_length, sizeof(packet->snake_length));
+    if (packet->snake_length > 0)
     {
-        memcpy(buffer + sizeof(packet->player_id) + sizeof(packet->length), packet->snake, packet->length * sizeof(SnakeSegment));
+        memcpy(buffer + sizeof(packet->player_id) + sizeof(packet->snake_length), packet->snake, packet->snake_length * sizeof(SnakeSegment));
     }
 
     size_t sent_bytes = 0;
@@ -50,18 +50,18 @@ void receive_data(int sockfd, DataPacket *packet)
     received_bytes = recv(sockfd, &packet->player_id, sizeof(packet->player_id), MSG_WAITALL);
     if (received_bytes <= 0) return;
     
-    received_bytes = recv(sockfd, &packet->length, sizeof(packet->length), MSG_WAITALL);
+    received_bytes = recv(sockfd, &packet->snake_length, sizeof(packet->snake_length), MSG_WAITALL);
     if (received_bytes <= 0) return;
 
-    if (packet->length > 0)
+    if (packet->snake_length > 0)
     {
-        packet->snake = malloc(packet->length * sizeof(SnakeSegment));
+        packet->snake = malloc(packet->snake_length * sizeof(SnakeSegment));
         if (!packet->snake)
         {
             printf("ERROR: malloc failed\n");
             return;
         }
-        received_bytes = recv(sockfd, packet->snake, packet->length * sizeof(SnakeSegment), MSG_WAITALL);
+        received_bytes = recv(sockfd, packet->snake, packet->snake_length * sizeof(SnakeSegment), MSG_WAITALL);
         if (received_bytes <= 0)
         {
             free(packet->snake);
@@ -78,17 +78,18 @@ void receive_data(int sockfd, DataPacket *packet)
 void *sender_func(void *data)
 {
     Game *game = (Game*)data;
+    DataPacket packet;
+
     while (true)
     {
-        DataPacket packet;
-        packet.length = game->world->snakes[0]->length;
+        packet.snake_length = game->world->snakes[0]->length;
         packet.player_id = game->players[0]->id;
-        packet.snake = malloc(packet.length * sizeof(SnakeSegment));
-        memcpy(packet.snake, game->world->snakes[0]->body, packet.length * sizeof(SnakeSegment));
+        packet.snake = malloc(packet.snake_length * sizeof(SnakeSegment));
+        memcpy(packet.snake, game->world->snakes[0]->body, packet.snake_length * sizeof(SnakeSegment));
 
         send_data(sockfd, &packet);
-        printf("Data sent\n");
         free(packet.snake);
+
         sleep(1 / game->world->snakes[0]->speed);
     }
     return NULL;
@@ -97,9 +98,11 @@ void *sender_func(void *data)
 void *receiver_func(void *data)
 {
     Game *game = (Game *)data;
+    DataPacket received;
+
     while (true)
     {
-        DataPacket received;
+
         receive_data(sockfd, &received);
 
         if (received.snake)
