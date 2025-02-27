@@ -35,5 +35,6 @@ typedef struct _DataPacket DataPacket;
 Game *init_game();
 void destroy_game(Game *game);
 void add_player(Game *game, DataPacket *received);
+bool update_player(Game *game, DataPacket *received);
 
 #endif

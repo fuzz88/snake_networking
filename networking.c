@@ -102,25 +102,10 @@ void *receiver_func(void *data)
         DataPacket received;
         receive_data(sockfd, &received);
 
-        bool new_player = true;
-
         if (received.snake)
         {
-            printf("Receiving data...\n");
-            pthread_mutex_lock(&game->update_mutex);
-            for (size_t i = 0; i < game->players_count; ++i)
-            {
-                if (game->players[i]->id == received.player_id)
-                {
-                    new_player = false;
-                    game->world->snakes[game->players[i]->snake_idx]->length = received.length;
-                    memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received.snake, received.length * sizeof(SnakeSegment));
-                    break;
-                }
-            }
-            pthread_mutex_unlock(&game->update_mutex);
-
-            if (new_player) add_player(game, &received);
+            bool is_new_player = update_player(game, &received);
+            if (is_new_player) add_player(game, &received);
             
             free(received.snake);
             received.snake = NULL;
