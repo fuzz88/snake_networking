@@ -13,7 +13,6 @@ typedef struct _DataPacket
     SnakeSegment *snake;
 } DataPacket;
 
-void *client_func(void *data);
 void start_networking(Game *game);
 
 #endif

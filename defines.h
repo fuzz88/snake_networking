@@ -23,7 +23,7 @@
 #define SNAKE_MAX_LENGTH    50
 #define TARGET_FPS          60
 #define SNAKE_START_SPEED   5
-#define SNAKE_MAX_SPEED     20
+#define SNAKE_MAX_SPEED     10
 
 #define MAX_PLAYERS         10
 #define MAX_SNAKES          MAX_PLAYERS

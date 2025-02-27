@@ -68,7 +68,7 @@ func main() {
 			fmt.Println("Connection error:", err)
 			continue
 		}
-		if len(clients) < 2 {
+		if len(clients) < 10 {
 			go handleClient(conn)
 		} else {
 			continue

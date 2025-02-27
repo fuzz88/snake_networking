@@ -10,30 +10,65 @@
 #include "defines.h"
 #include "game.h"
 
+int sockfd;
+pthread_mutex_t socket_mutex;
+
 void send_data(int sockfd, DataPacket *packet)
 {
-    // Send fixed-size header first
-    send(sockfd, &packet->player_id, sizeof(packet->player_id), 0);
-    send(sockfd, &packet->length, sizeof(packet->length), 0);
+    size_t total_size = sizeof(packet->player_id) + sizeof(packet->length) + (packet->length * sizeof(SnakeSegment));
+    char *buffer = malloc(total_size);
+    if (!buffer)
+    {
+        printf("ERROR: malloc failed\n");
+        return;
+    }
 
-    // Send variable-length snake data
+    memcpy(buffer, &packet->player_id, sizeof(packet->player_id));
+    memcpy(buffer + sizeof(packet->player_id), &packet->length, sizeof(packet->length));
     if (packet->length > 0)
     {
-        send(sockfd, packet->snake, packet->length * sizeof(SnakeSegment), 0);
+        memcpy(buffer + sizeof(packet->player_id) + sizeof(packet->length), packet->snake, packet->length * sizeof(SnakeSegment));
     }
+
+    size_t sent_bytes = 0;
+    while (sent_bytes < total_size)
+    {
+        ssize_t result = send(sockfd, buffer + sent_bytes, total_size - sent_bytes, 0);
+        if (result < 0)
+        {
+            printf("ERROR: send failed\n");
+            break;
+        }
+        sent_bytes += result;
+    }
+
+    free(buffer);
 }
 
 void receive_data(int sockfd, DataPacket *packet)
 {
-    // Receive fixed-size header first
-    recv(sockfd, &packet->player_id, sizeof(packet->player_id), 0);
-    recv(sockfd, &packet->length, sizeof(packet->length), 0);
+    ssize_t received_bytes;
+    received_bytes = recv(sockfd, &packet->player_id, sizeof(packet->player_id), MSG_WAITALL);
+    if (received_bytes <= 0) return;
+    
+    received_bytes = recv(sockfd, &packet->length, sizeof(packet->length), MSG_WAITALL);
+    if (received_bytes <= 0) return;
 
-    // Allocate memory for the variable-length snake array
     if (packet->length > 0)
     {
         packet->snake = malloc(packet->length * sizeof(SnakeSegment));
-        recv(sockfd, packet->snake, packet->length * sizeof(SnakeSegment), 0);
+        if (!packet->snake)
+        {
+            printf("ERROR: malloc failed\n");
+            return;
+        }
+        received_bytes = recv(sockfd, packet->snake, packet->length * sizeof(SnakeSegment), MSG_WAITALL);
+        if (received_bytes <= 0)
+        {
+            free(packet->snake);
+            packet->snake = NULL;
+            return;
+        }
     }
     else
     {
@@ -41,70 +76,83 @@ void receive_data(int sockfd, DataPacket *packet)
     }
 }
 
-void *client_func(void *data)
+void *sender_func(void *data)
 {
-    Game *game = (Game *)data;
-
-    int sockfd;
-    struct sockaddr_in server_addr;
-    char buffer[sizeof(DataPacket)];
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("ERROR: socket creation failed");
-        return NULL;
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SERVER_PORT);
-    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
-    int conn_result = -1;
-    do {
-        sleep(1);
-        conn_result = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-    } while (conn_result < 0);
-
-    DataPacket packet;
-    packet.player_id = game->players[0]->id;
-
-    DataPacket received;
-
+    Game *game = (Game*)data;
     while (true)
     {
+        DataPacket packet;
         packet.length = game->world->snakes[0]->length;
+        packet.player_id = game->players[0]->id;
         packet.snake = malloc(packet.length * sizeof(SnakeSegment));
-
         memcpy(packet.snake, game->world->snakes[0]->body, packet.length * sizeof(SnakeSegment));
 
         send_data(sockfd, &packet);
-        sleep(1 / TARGET_FPS / SNAKE_MAX_SPEED);
+        printf("Data sent\n");
+        free(packet.snake);
+        sleep(1 / game->world->snakes[0]->speed);
+    }
+    return NULL;
+}
+
+void *receiver_func(void *data)
+{
+    Game *game = (Game *)data;
+    while (true)
+    {
+        DataPacket received;
         receive_data(sockfd, &received);
 
         bool new_player = true;
-        for (size_t i = 0; i < game->players_count; ++i)
+
+        if (received.snake)
         {
-            if (game->players[i]->id == received.player_id)
+            printf("Receiving data...\n");
+            pthread_mutex_lock(&game->update_mutex);
+            for (size_t i = 0; i < game->players_count; ++i)
             {
-                new_player = false;
-                game->world->snakes[game->players[i]->snake_idx]->length = received.length;
-                memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received.snake, received.length * sizeof(SnakeSegment));
+                if (game->players[i]->id == received.player_id)
+                {
+                    new_player = false;
+                    game->world->snakes[game->players[i]->snake_idx]->length = received.length;
+                    memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received.snake, received.length * sizeof(SnakeSegment));
+                    break;
+                }
             }
+            pthread_mutex_unlock(&game->update_mutex);
+
+            if (new_player) add_player(game, &received);
+            
+            free(received.snake);
+            received.snake = NULL;
+
+            // sleep(1 / game->world->snakes[0]->speed);
         }
-        if (new_player)
-            add_player(game, &received);
-
-        free(packet.snake);
-        free(received.snake);
     }
-
     return NULL;
 }
 
 void start_networking(Game *game)
 {
-    pthread_t tcp_client_thread;
-    if (pthread_create(&tcp_client_thread, NULL, client_func, game) != 0)
+    pthread_mutex_init(&socket_mutex, NULL);
+
+    struct sockaddr_in server_addr;
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("ERROR: thread create failed");
+        printf("ERROR: socket creation failed\n");
+        return;
     }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(SERVER_PORT);
+    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
+
+    while (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    {
+        sleep(1);
+    }
+
+    pthread_t sender_thread, receiver_thread;
+    pthread_create(&sender_thread, NULL, sender_func, game);
+    pthread_create(&receiver_thread, NULL, receiver_func, game);
 }
