@@ -69,7 +69,7 @@ void add_player(Game *game, DataPacket *received)
 
 bool update_player(Game *game, DataPacket *received)
 {
-    bool is_new_player = true;
+    bool is_existing = false;
     pthread_mutex_lock(&game->update_mutex);
     for (size_t i = 0; i < game->players_count; ++i)
     {
@@ -77,11 +77,12 @@ bool update_player(Game *game, DataPacket *received)
         {
             game->world->snakes[game->players[i]->snake_idx]->length = received->snake_length;
             memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received->snake, received->snake_length * sizeof(SnakeSegment));
-            is_new_player = false;
+            is_existing = true;
+            break;
         }
     }
     pthread_mutex_unlock(&game->update_mutex);
-    return is_new_player;
+    return is_existing;
 }
 
 void destroy_game(Game *game)

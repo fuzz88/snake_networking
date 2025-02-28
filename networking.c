@@ -5,124 +5,139 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "networking.h"
 #include "defines.h"
 #include "game.h"
+#include <sys/types.h>
 
-int sockfd;
 
-void send_data(int sockfd, DataPacket *packet)
-{
-    size_t total_size = sizeof(packet->player_id) + sizeof(packet->snake_length) + (packet->snake_length * sizeof(SnakeSegment));
-    char *buffer = malloc(total_size);
-    if (!buffer)
-    {
-        printf("ERROR: malloc failed\n");
-        return;
-    }
+typedef struct {
+    uint32_t player_id;    // Use fixed-width types
+    uint32_t snake_length;
+} __attribute__((packed)) Header; // Packed to avoid padding
 
-    memcpy(buffer, &packet->player_id, sizeof(packet->player_id));
-    memcpy(buffer + sizeof(packet->player_id), &packet->snake_length, sizeof(packet->snake_length));
-    if (packet->snake_length > 0)
-    {
-        memcpy(buffer + sizeof(packet->player_id) + sizeof(packet->snake_length), packet->snake, packet->snake_length * sizeof(SnakeSegment));
-    }
+typedef struct {
+    int sockfd;
+    Game *game;
+} ThreadData;
 
-    size_t sent_bytes = 0;
-    while (sent_bytes < total_size)
-    {
-        ssize_t result = send(sockfd, buffer + sent_bytes, total_size - sent_bytes, 0);
-        if (result < 0)
-        {
-            printf("ERROR: send failed\n");
-            break;
-        }
-        sent_bytes += result;
-    }
+void send_data(int sockfd, const DataPacket *packet) {
+    Header header;
+    header.player_id = htonl(packet->player_id);
+    header.snake_length = htonl(packet->snake_length);
 
-    free(buffer);
-}
-
-void receive_data(int sockfd, DataPacket *packet)
-{
-    ssize_t received_bytes;
-    received_bytes = recv(sockfd, &packet->player_id, sizeof(packet->player_id), MSG_WAITALL);
-    if (received_bytes <= 0) return;
-    
-    received_bytes = recv(sockfd, &packet->snake_length, sizeof(packet->snake_length), MSG_WAITALL);
-    if (received_bytes <= 0) return;
-
-    if (packet->snake_length > 0)
-    {
-        packet->snake = malloc(packet->snake_length * sizeof(SnakeSegment));
-        if (!packet->snake)
-        {
-            printf("ERROR: malloc failed\n");
+    // Send header
+    size_t sent = 0;
+    while (sent < sizeof(header)) {
+        ssize_t res = send(sockfd, (char*)&header + sent, sizeof(header) - sent, 0);
+        if (res <= 0) {
+            perror("send header failed");
             return;
         }
-        received_bytes = recv(sockfd, packet->snake, packet->snake_length * sizeof(SnakeSegment), MSG_WAITALL);
-        if (received_bytes <= 0)
-        {
+        sent += res;
+    }
+
+    // Send snake segments if present
+    if (packet->snake_length > 0) {
+        sent = 0;
+        size_t total = packet->snake_length * sizeof(SnakeSegment);
+        while (sent < total) {
+            ssize_t res = send(sockfd, (char*)packet->snake + sent, total - sent, 0);
+            if (res <= 0) {
+                perror("send snake failed");
+                return;
+            }
+            sent += res;
+        }
+    }
+}
+
+bool receive_data(int sockfd, DataPacket *packet) {
+    Header header;
+    ssize_t received = recv(sockfd, &header, sizeof(header), MSG_WAITALL);
+    if (received != sizeof(header)) return false;
+
+    packet->player_id = ntohl(header.player_id);
+    packet->snake_length = ntohl(header.snake_length);
+
+    // Validate snake_length to prevent excessive allocation
+    if (packet->snake_length > SNAKE_MAX_LENGTH) {
+        fprintf(stderr, "Invalid snake length: %u\n", packet->snake_length);
+        return false;
+    }
+
+    packet->snake = NULL;
+    if (packet->snake_length > 0) {
+        packet->snake = malloc(packet->snake_length * sizeof(SnakeSegment));
+        if (!packet->snake) {
+            perror("malloc failed");
+            return false;
+        }
+        received = recv(sockfd, packet->snake, packet->snake_length * sizeof(SnakeSegment), MSG_WAITALL);
+        if (received != (ssize_t)(packet->snake_length * sizeof(SnakeSegment))) {
             free(packet->snake);
             packet->snake = NULL;
-            return;
+            return false;
         }
     }
-    else
-    {
-        packet->snake = NULL;
-    }
+    return true;
 }
 
-void *sender_func(void *data)
-{
-    Game *game = (Game*)data;
-    DataPacket packet;
+void *sender_func(void *arg) {
+    ThreadData *data = (ThreadData*)arg;
+    Game *game = data->game;
+    int sockfd = data->sockfd;
 
-    while (true)
-    {
-        packet.snake_length = game->world->snakes[0]->length;
+    DataPacket packet;
+    packet.snake = malloc(SNAKE_MAX_LENGTH * sizeof(SnakeSegment)); // Pre-allocate max size
+
+    while (true) {
+        Snake *snake = game->world->snakes[0];
+        if (!snake) break;
+
         packet.player_id = game->players[0]->id;
-        packet.snake = malloc(packet.snake_length * sizeof(SnakeSegment));
-        memcpy(packet.snake, game->world->snakes[0]->body, packet.snake_length * sizeof(SnakeSegment));
+        packet.snake_length = snake->length;
+        memcpy(packet.snake, snake->body, snake->length * sizeof(SnakeSegment));
 
         send_data(sockfd, &packet);
-        free(packet.snake);
 
-        sleep(1 / game->world->snakes[0]->speed);
+        // Calculate delay with floating-point division
+        double delay = 1.0 / snake->speed;
+        usleep((useconds_t)(delay * 1000000));
     }
+
+    free(packet.snake);
     return NULL;
 }
 
-void *receiver_func(void *data)
-{
-    Game *game = (Game *)data;
+void *receiver_func(void *arg) {
+    ThreadData *data = (ThreadData*)arg;
+    Game *game = data->game;
+    int sockfd = data->sockfd;
+
     DataPacket received;
+    while (true) {
+        if (!receive_data(sockfd, &received)) break;
 
-    while (true)
-    {
-
-        receive_data(sockfd, &received);
-
-        if (received.snake)
-        {
-            bool is_new_player = update_player(game, &received);
-            if (is_new_player) add_player(game, &received);
-            
+        if (received.snake) {
+            bool is_existing = update_player(game, &received);
+            if (!is_existing) {
+                add_player(game, &received);
+            }
             free(received.snake);
-            received.snake = NULL;
         }
     }
     return NULL;
 }
 
-void start_networking(Game *game)
-{
+void start_networking(Game *game) {
     struct sockaddr_in server_addr;
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("ERROR: socket creation failed\n");
+    int sockfd;
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket creation failed");
         return;
     }
 
@@ -130,12 +145,27 @@ void start_networking(Game *game)
     server_addr.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr);
 
-    while (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        sleep(1);
+    while (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        sleep(1); // Wait before retrying
     }
 
+    ThreadData *data = malloc(sizeof(ThreadData));
+    data->sockfd = sockfd;
+    data->game = game;
+
     pthread_t sender_thread, receiver_thread;
-    pthread_create(&sender_thread, NULL, sender_func, game);
-    pthread_create(&receiver_thread, NULL, receiver_func, game);
+    if (pthread_create(&sender_thread, NULL, sender_func, data) != 0) {
+        perror("pthread_create (sender) failed");
+        close(sockfd);
+        return;
+    }
+    if (pthread_create(&receiver_thread, NULL, receiver_func, data) != 0) {
+        perror("pthread_create (receiver) failed");
+        close(sockfd);
+        return;
+    }
+
+    // Detach threads to avoid memory leaks (or handle joining elsewhere)
+    pthread_detach(sender_thread);
+    pthread_detach(receiver_thread);
 }
