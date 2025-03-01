@@ -4,7 +4,7 @@
 
 #include "raylib.h"
 
-typedef struct _Game Game;
+typedef struct Game Game;
 
 enum SCREEN_STATE
 {
@@ -12,7 +12,7 @@ enum SCREEN_STATE
     MENU,
 };
 
-typedef struct _Screen
+typedef struct Screen
 {
     enum SCREEN_STATE state;
     size_t menu_idx;

@@ -8,20 +8,20 @@
 #include "snake.h"
 #include "drawing.h"
 
-typedef struct _World
+typedef struct World
 {
     Snake **snakes;
     size_t snakes_count;
 } World;
 
-typedef struct _Player
+typedef struct Player
 {
     size_t snake_idx;
     size_t score;
     uint16_t id;
 } Player;
 
-typedef struct _Game
+typedef struct Game
 {
     Screen *screen;
     World *world;
@@ -30,7 +30,7 @@ typedef struct _Game
     pthread_mutex_t update_mutex;
 } Game;
 
-typedef struct _DataPacket DataPacket;
+typedef struct DataPacket DataPacket;
 
 Game *init_game();
 void destroy_game(Game *game);

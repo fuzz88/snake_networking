@@ -8,7 +8,7 @@
 
 typedef Point SnakeSegment;
 
-typedef struct _Snake
+typedef struct Snake
 {
     SnakeSegment body[SNAKE_MAX_LENGTH];
     uint8_t length;

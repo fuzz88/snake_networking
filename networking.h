@@ -6,7 +6,7 @@
 #include "point.h"
 #include "game.h"
 
-typedef struct _DataPacket
+typedef struct DataPacket
 {
     uint16_t player_id;
     uint16_t snake_length;
