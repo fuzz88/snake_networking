@@ -38,7 +38,6 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 	clientsMu.Lock()
 	id := clientID
-	fmt.Println("Connected ", id)
 	clients[id] = &Client{conn: conn, id: id}
 	clientID++
 	clientsMu.Unlock()
@@ -48,29 +47,6 @@ func handleClient(conn net.Conn) {
 		n, err := conn.Read(buf)
 		if err != nil {
 			break
-		}
-
-		packetType := binary.BigEndian.Uint32(buf[0:4])
-		playerID := binary.BigEndian.Uint32(buf[4:8])
-		score := binary.BigEndian.Uint32(buf[8:12])
-		dataLen := binary.BigEndian.Uint32(buf[12:16])
-
-		var data []Point
-
-		for i := 0; i < int(dataLen); i++ {
-			offset := 12 + i*2
-			data = append(data, Point{
-				X: int8(buf[offset]),
-				Y: int8(buf[offset+1]),
-			})
-		}
-
-		packet := DataPacket{
-			PacketType: packetType,
-			PlayerID:   playerID,
-			Score:      score,
-			DataLen:    dataLen,
-			Data:       data,
 		}
 
 		broadcast(buf[:n], id)
@@ -94,7 +70,6 @@ func generatePackets() {
 			DataLen:    1,
 			Data:       []Point{randomPoint},
 		}
-		fmt.Println("Generated apple packet:", packet)
 		broadcast(encodePacket(&packet), -1)
 	}
 }
@@ -122,7 +97,6 @@ func broadcast(data []byte, senderID int) {
 
 	for id, client := range clients {
 		if id != senderID {
-			fmt.Println("Sent to ", id)
 			client.conn.Write(data)
 		}
 	}
