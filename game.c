@@ -58,8 +58,8 @@ void add_player(Game *game, DataPacket *received)
     p->snake_idx = game->world->snakes_count++;
 
     Snake *snake = malloc(sizeof(Snake));
-    snake->length = received->snake_length;
-    memcpy(snake->body, received->snake, received->snake_length * sizeof(SnakeSegment));
+    snake->length = received->data_len;
+    memcpy(snake->body, received->data, received->data_len * sizeof(Point));
 
     game->world->snakes[p->snake_idx] = snake;
     game->players[game->players_count++] = p;
@@ -75,8 +75,8 @@ bool update_player(Game *game, DataPacket *received)
     {
         if (game->players[i]->id == received->player_id)
         {
-            game->world->snakes[game->players[i]->snake_idx]->length = received->snake_length;
-            memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received->snake, received->snake_length * sizeof(SnakeSegment));
+            game->world->snakes[game->players[i]->snake_idx]->length = received->data_len;
+            memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received->data, received->data_len * sizeof(Point));
             is_existing = true;
             break;
         }

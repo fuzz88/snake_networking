@@ -6,11 +6,11 @@
 #include "defines.h"
 #include "point.h"
 
-typedef Point SnakeSegment;
+typedef Point Point;
 
 typedef struct Snake
 {
-    SnakeSegment body[SNAKE_MAX_LENGTH];
+    Point body[SNAKE_MAX_LENGTH];
     uint8_t length;
     uint8_t speed;
     Point direction;

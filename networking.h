@@ -6,11 +6,13 @@
 #include "point.h"
 #include "game.h"
 
+
 typedef struct DataPacket
 {
-    uint16_t player_id;
-    uint16_t snake_length;
-    SnakeSegment *snake;
+    uint32_t packet_type;
+    uint32_t player_id;
+    uint32_t data_len;
+    Point *data;
 } DataPacket;
 
 void start_networking(Game *game);
