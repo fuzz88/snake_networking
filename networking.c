@@ -15,9 +15,10 @@
 typedef struct
 {
     uint32_t packet_type;
-    uint32_t player_id; // Use fixed-width types
+    uint32_t player_id;
+    uint32_t score;
     uint32_t data_len;
-} __attribute__((packed)) Header; // Packed to avoid padding
+} __attribute__((packed)) Header;
 
 typedef struct
 {
@@ -28,9 +29,10 @@ typedef struct
 void send_data(int sockfd, const DataPacket *packet)
 {
     Header header;
-    header.player_id = htonl(packet->player_id);
-    header.data_len = htonl(packet->data_len);
     header.packet_type = htonl(packet->packet_type);
+    header.player_id = htonl(packet->player_id);
+    header.score = htonl(packet->score);
+    header.data_len = htonl(packet->data_len);
 
     // Send header
     size_t sent = 0;
@@ -70,9 +72,10 @@ bool receive_data(int sockfd, DataPacket *packet)
     if (received != sizeof(header))
         return false;
 
-    packet->player_id = ntohl(header.player_id);
-    packet->data_len = ntohl(header.data_len);
     packet->packet_type = ntohl(header.packet_type);
+    packet->player_id = ntohl(header.player_id);
+    packet->score = ntohl(header.score);
+    packet->data_len = ntohl(header.data_len);
 
     // Validate snake_length to prevent excessive allocation
     if (packet->data_len > SNAKE_MAX_LENGTH)
@@ -116,9 +119,10 @@ void *sender_func(void *arg)
         if (!snake)
             break;
 
-        packet.player_id = game->players[0]->id;
-        packet.data_len = snake->length;
         packet.packet_type = 0; // snake & player // packet_type=1, apple packets server will generate on its side
+        packet.player_id = game->players[0]->id;
+        packet.score = game->players[0]->score;
+        packet.data_len = snake->length;
 
         memcpy(packet.data, snake->body, snake->length * sizeof(Point));
 
@@ -158,7 +162,6 @@ void *receiver_func(void *arg)
                 break;
             case 1: // apple
                 game->world->apple = received.data[0];
-                break;
             default:
                 break;
             }

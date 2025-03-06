@@ -23,6 +23,7 @@ type Point struct {
 type DataPacket struct {
 	PacketType uint32
 	PlayerID   uint32
+	Score      uint32
 	DataLen    uint32
 	Data       []Point
 }
@@ -51,11 +52,10 @@ func handleClient(conn net.Conn) {
 
 		packetType := binary.BigEndian.Uint32(buf[0:4])
 		playerID := binary.BigEndian.Uint32(buf[4:8])
-		dataLen := binary.BigEndian.Uint32(buf[8:12])
+		score := binary.BigEndian.Uint32(buf[8:12])
+		dataLen := binary.BigEndian.Uint32(buf[12:16])
 
 		var data []Point
-
-		fmt.Println(dataLen)
 
 		for i := 0; i < int(dataLen); i++ {
 			offset := 12 + i*2
@@ -68,11 +68,10 @@ func handleClient(conn net.Conn) {
 		packet := DataPacket{
 			PacketType: packetType,
 			PlayerID:   playerID,
+			Score:      score,
 			DataLen:    dataLen,
 			Data:       data,
 		}
-
-		fmt.Println(packet)
 
 		broadcast(buf[:n], id)
 	}
@@ -91,10 +90,11 @@ func generatePackets() {
 		packet := DataPacket{
 			PacketType: 1,
 			PlayerID:   1337,
+			Score:      0,
 			DataLen:    1,
 			Data:       []Point{randomPoint},
 		}
-		fmt.Println("Generated random packet:", packet)
+		fmt.Println("Generated apple packet:", packet)
 		broadcast(encodePacket(&packet), -1)
 	}
 }
@@ -105,6 +105,7 @@ func encodePacket(packet *DataPacket) []byte {
 	// Write fields in big-endian (matching C's ntohl/htonl)
 	binary.Write(buf, binary.BigEndian, packet.PacketType)
 	binary.Write(buf, binary.BigEndian, packet.PlayerID)
+	binary.Write(buf, binary.BigEndian, packet.Score)
 	binary.Write(buf, binary.BigEndian, packet.DataLen)
 
 	// Write each Point (each is 2 bytes: X, Y)

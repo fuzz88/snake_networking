@@ -18,8 +18,8 @@ typedef struct World
 typedef struct Player
 {
     size_t snake_idx;
-    size_t score;
-    uint16_t id;
+    uint32_t score;
+    uint32_t id;
 } Player;
 
 typedef struct Game
@@ -28,6 +28,8 @@ typedef struct Game
     World *world;
     Player **players;
     size_t players_count;
+    bool winner;
+    bool looser;
     pthread_mutex_t update_mutex;
 } Game;
 

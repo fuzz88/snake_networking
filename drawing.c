@@ -52,9 +52,13 @@ void draw_score(Game *game) {
     char text[50];
     for (size_t i = 0; i < game->players_count; i++ ) {
         sprintf((char*)&text, "Score: %d", game->players[i]->score);
-        DrawText(text, 30, 30 + 20 * i, 12, BLUE);
+        DrawText(text, 30, 30 + 30 * i, 24, BLUE);
     }
 
+}
+
+void draw_instructions() {
+    DrawText("Press G to draw grid", 500, 30, 24, BLUE);
 }
 
 void game_screen(Game *game, size_t *framesCounter)
@@ -72,6 +76,7 @@ void game_screen(Game *game, size_t *framesCounter)
     }
 
     draw_score(game);
+    draw_instructions();
 
     pthread_mutex_unlock(&game->update_mutex);
 

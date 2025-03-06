@@ -44,6 +44,9 @@ Game *init_game()
     g->world->apple.x = 0;
     g->world->apple.y = 0;
 
+    g->winner = false;
+    g->looser = false;
+
     pthread_mutex_init(&g->update_mutex, NULL);
 
     return g;
@@ -57,7 +60,7 @@ void add_player(Game *game, DataPacket *received)
 
     Player *p = malloc(sizeof(Player));
     p->id = received->player_id;
-    p->score = 0;
+    p->score = received->score;
     p->snake_idx = game->world->snakes_count++;
 
     Snake *snake = malloc(sizeof(Snake));
@@ -79,6 +82,7 @@ bool update_player(Game *game, DataPacket *received)
         if (game->players[i]->id == received->player_id)
         {
             game->world->snakes[game->players[i]->snake_idx]->length = received->data_len;
+            game->players[i]->score = received->score;
             memcpy(game->world->snakes[game->players[i]->snake_idx]->body, received->data, received->data_len * sizeof(Point));
             is_existing = true;
             break;
