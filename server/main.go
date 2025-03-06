@@ -1,14 +1,30 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
+	"time"
 )
 
 type Client struct {
 	conn net.Conn
 	id   int
+}
+
+type Point struct {
+	X int8
+	Y int8
+}
+
+type DataPacket struct {
+	PacketType uint32
+	PlayerID   uint32
+	DataLen    uint32
+	Data       []Point
 }
 
 var (
@@ -32,12 +48,71 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			break
 		}
+
+		packetType := binary.BigEndian.Uint32(buf[0:4])
+		playerID := binary.BigEndian.Uint32(buf[4:8])
+		dataLen := binary.BigEndian.Uint32(buf[8:12])
+
+		var data []Point
+
+		fmt.Println(dataLen)
+
+		for i := 0; i < int(dataLen); i++ {
+			offset := 12 + i*2
+			data = append(data, Point{
+				X: int8(buf[offset]),
+				Y: int8(buf[offset+1]),
+			})
+		}
+
+		packet := DataPacket{
+			PacketType: packetType,
+			PlayerID:   playerID,
+			DataLen:    dataLen,
+			Data:       data,
+		}
+
+		fmt.Println(packet)
+
 		broadcast(buf[:n], id)
 	}
 
 	clientsMu.Lock()
 	delete(clients, id)
 	clientsMu.Unlock()
+}
+
+func generatePackets() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		randomPoint := Point{X: int8(rand.Intn(30) + 5), Y: int8(rand.Intn(20) + 5)}
+		packet := DataPacket{
+			PacketType: 1,
+			PlayerID:   1337,
+			DataLen:    1,
+			Data:       []Point{randomPoint},
+		}
+		fmt.Println("Generated random packet:", packet)
+		broadcast(encodePacket(&packet), -1)
+	}
+}
+
+func encodePacket(packet *DataPacket) []byte {
+	buf := new(bytes.Buffer)
+
+	// Write fields in big-endian (matching C's ntohl/htonl)
+	binary.Write(buf, binary.BigEndian, packet.PacketType)
+	binary.Write(buf, binary.BigEndian, packet.PlayerID)
+	binary.Write(buf, binary.BigEndian, packet.DataLen)
+
+	// Write each Point (each is 2 bytes: X, Y)
+	for _, point := range packet.Data {
+		binary.Write(buf, binary.BigEndian, point)
+	}
+
+	return buf.Bytes()
 }
 
 func broadcast(data []byte, senderID int) {
@@ -61,6 +136,8 @@ func main() {
 	defer ln.Close()
 
 	fmt.Println("Server started on port 9000")
+
+	go generatePackets()
 
 	for {
 		conn, err := ln.Accept()

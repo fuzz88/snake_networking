@@ -12,6 +12,7 @@ typedef struct World
 {
     Snake **snakes;
     size_t snakes_count;
+    Point apple;
 } World;
 
 typedef struct Player

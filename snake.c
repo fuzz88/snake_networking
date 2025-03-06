@@ -3,6 +3,7 @@
 
 #include "snake.h"
 #include "drawing.h"
+#include "game.h"
 
 Snake *init_snake(int x, int y)
 {
@@ -29,8 +30,9 @@ void draw_snake(Snake *snake)
     }
 }
 
-void move_snake(Snake *snake)
+void move_snake(Game *game)
 {
+    Snake *snake = game->world->snakes[0];
     for (size_t i = 0; i < snake->length - 1; ++i)
     {
         snake->body[i] = snake->body[i + 1];
@@ -50,4 +52,10 @@ void move_snake(Snake *snake)
 
     snake->body[snake->length - 1].x = next_x;
     snake->body[snake->length - 1].y = next_y;
+
+    if (next_x == game->world->apple.x && next_y == game->world->apple.y) {
+        game->players[0]->score++;
+        game->world->apple.x = 0;
+        game->world->apple.y = 0;
+    }
 }

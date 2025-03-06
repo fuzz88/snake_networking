@@ -157,6 +157,7 @@ void *receiver_func(void *arg)
                 }
                 break;
             case 1: // apple
+                game->world->apple = received.data[0];
                 break;
             default:
                 break;

@@ -6,6 +6,8 @@
 #include "defines.h"
 #include "point.h"
 
+typedef struct Game Game;
+
 typedef Point Point;
 
 typedef struct Snake
@@ -18,6 +20,6 @@ typedef struct Snake
 
 Snake *init_snake(int x, int y);
 void draw_snake(Snake *snake);
-void move_snake(Snake *snake);
+void move_snake(Game *game);
 
 #endif

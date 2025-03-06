@@ -44,6 +44,19 @@ void clear_snake_segment(int x, int y)
     fill_cell(x, y, BG_COLOR);
 }
 
+void draw_apple(Point p) {
+    fill_cell(p.x, p.y, RED);
+}
+
+void draw_score(Game *game) {
+    char text[50];
+    for (size_t i = 0; i < game->players_count; i++ ) {
+        sprintf((char*)&text, "Score: %d", game->players[i]->score);
+        DrawText(text, 30, 30 + 20 * i, 12, BLUE);
+    }
+
+}
+
 void game_screen(Game *game, size_t *framesCounter)
 {
 
@@ -54,6 +67,12 @@ void game_screen(Game *game, size_t *framesCounter)
         draw_snake(game->world->snakes[i]);
     }
 
+    if (game->world->apple.x != 0) { // single coord check. init empty apple as {0, 0}, any other coords is received from server
+        draw_apple(game->world->apple);
+    }
+
+    draw_score(game);
+
     pthread_mutex_unlock(&game->update_mutex);
 
     size_t frames_per_tick = TARGET_FPS / game->world->snakes[0]->speed;
@@ -61,7 +80,7 @@ void game_screen(Game *game, size_t *framesCounter)
     if (*framesCounter % frames_per_tick == 0)
     {
         *framesCounter = 0;
-        move_snake(game->world->snakes[0]);
+        move_snake(game);
     }
 }
 

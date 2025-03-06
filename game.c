@@ -41,6 +41,9 @@ Game *init_game()
     g->players[0] = p;
     g->players_count = 1;
 
+    g->world->apple.x = 0;
+    g->world->apple.y = 0;
+
     pthread_mutex_init(&g->update_mutex, NULL);
 
     return g;
