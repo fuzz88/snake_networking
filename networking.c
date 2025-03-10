@@ -122,7 +122,7 @@ void *sender_func(void *arg)
         packet.packet_type = 0; // snake & player // packet_type=1, apple packets server will generate on its side
         packet.player_id = game->players[0]->id;
         packet.score = game->players[0]->score;
-        packet.data_len = snake->length;
+        packet.data_len = (uint32_t)snake->length;
 
         memcpy(packet.data, snake->body, snake->length * sizeof(Point));
 
